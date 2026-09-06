@@ -1,0 +1,13 @@
+The National Accounts Statistics (NAS) is a comprehensive framework for computing Gross Domestic Product (GDP) in India. The Central Statistics Office (CSO) publishes GDP estimates using three approaches: Production Approach, Income Approach, and Expenditure Approach.
+
+Under the Production Approach, GDP is calculated by summing the Gross Value Added (GVA) across all sectors. The three main sectors are: Primary Sector (agriculture, mining), Secondary Sector (manufacturing, construction), and Tertiary Sector (services, trade, transport).
+
+India's GDP estimation follows a base year methodology. The current base year for national accounts is 2011-12. The base year is periodically revised to reflect changes in the structure of the economy.
+
+The Sample Registration System (SRS) is a large-scale demographic survey in India. It provides annual estimates of fertility and mortality indicators. The SRS uses a dual record system method, where both births and deaths are recorded by two independent sources: resident enumeration and retrospective surveys.
+
+Key SRS indicators include: Crude Birth Rate (CBR), Crude Death Rate (CDR), Infant Mortality Rate (IMR), and Total Fertility Rate (TFR). India's IMR was 28 per 1,000 live births in 2020, showing significant improvement from 45 in 2014.
+
+The Natural Population Growth Rate is calculated as CBR minus CDR. India's population growth rate has been declining from 2.2% in 1971 to 1.0% in 2021.
+
+Data Dissemination Standards follow the Special Data Dissemination Standard (SDDS) framework of the IMF. India complies with SDDS requirements for publishing economic and financial data regularly and transparently.

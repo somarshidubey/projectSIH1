@@ -1,0 +1,114 @@
+{
+  "competencies": [
+    {
+      "id": "FMT_001",
+      "name": "Fundamentals of Mathematics & Statistics",
+      "category": "Foundation",
+      "levels": {
+        "1": "Basic statistics (mean, median, standard deviation)",
+        "2": "Probability distributions and hypothesis testing",
+        "3": "Regression analysis and time series basics",
+        "4": "Advanced statistical methods expert"
+      },
+      "prerequisites": [],
+      "dac_codes": ["0.1"]
+    },
+    {
+      "id": "FMT_002",
+      "name": "Fundamentals of Macroeconomic Theory",
+      "category": "Foundation",
+      "levels": {
+        "1": "Understands basic macroeconomic indicators",
+        "2": "Can interpret macro data for policy analysis",
+        "3": "Can build macroeconomic models",
+        "4": "Expert level macroeconomic analysis"
+      },
+      "prerequisites": [],
+      "dac_codes": ["1.0"]
+    },
+    {
+      "id": "NAS_001",
+      "name": "National Accounts Statistics",
+      "category": "Core Statistical",
+      "levels": {
+        "1": "Basic understanding of GDP concepts",
+        "2": "Can compute GDP estimates using production approach",
+        "3": "Can perform inter-sectoral comparisons and revisions",
+        "4": "Expert - can lead NSDP estimation for a state"
+      },
+      "prerequisites": ["FMT_002"],
+      "dac_codes": ["1.1", "1.2"]
+    },
+    {
+      "id": "SRS_001",
+      "name": "Sample Registration System",
+      "category": "Survey Methodology",
+      "levels": {
+        "1": "Understands SRS sampling framework",
+        "2": "Can process SRS data and compute fertility/mortality indicators",
+        "3": "Can design SRS-based studies and handle CBR/CDR estimation",
+        "4": "Expert - can train others on SRS methodology"
+      },
+      "prerequisites": ["FMT_001"],
+      "dac_codes": ["2.1"]
+    },
+    {
+      "id": "IOT_001",
+      "name": "IoT-Based Data Collection",
+      "category": "Modern Tools",
+      "levels": {
+        "1": "Aware of IoT sensors in data collection",
+        "2": "Can configure and deploy basic IoT data collection setups",
+        "3": "Can integrate IoT data streams with statistical databases",
+        "4": "Expert - can design IoT-based data collection architecture"
+      },
+      "prerequisites": [],
+      "dac_codes": ["3.1"]
+    },
+    {
+      "id": "DDI_001",
+      "name": "Data Dissemination & Informatics",
+      "category": "Data Management",
+      "levels": {
+        "1": "Understands data publication standards",
+        "2": "Can prepare data for SDMX-compliant dissemination",
+        "3": "Can manage data pipelines and metadata catalogs",
+        "4": "Expert in data dissemination systems"
+      },
+      "prerequisites": ["FMT_002"],
+      "dac_codes": ["4.1"]
+    }
+  ],
+  "roles": {
+    "statistical_officer": {
+      "title": "Statistical Officer",
+      "required_competencies": {
+        "FMT_001": 2,
+        "FMT_002": 2,
+        "NAS_001": 1,
+        "SRS_001": 1,
+        "DDI_001": 1
+      }
+    },
+    "deputy_director": {
+      "title": "Deputy Director (Statistics)",
+      "required_competencies": {
+        "FMT_001": 3,
+        "FMT_002": 3,
+        "NAS_001": 2,
+        "SRS_001": 2,
+        "IOT_001": 1,
+        "DDI_001": 2
+      }
+    },
+    "joint_secretary": {
+      "title": "Joint Secretary (Stats)",
+      "required_competencies": {
+        "NAS_001": 3,
+        "SRS_001": 3,
+        "IOT_001": 2,
+        "DDI_001": 3
+      }
+    }
+  }
+}
