@@ -19,13 +19,25 @@ async function handleResponse(res) {
   }
 
   if (!res.ok) {
+    if (res.status === 429) {
+      const msg = data?.detail || 'Rate limit exceeded: too many attempts from your IP. Please wait a moment before trying again.'
+      throw new ApiError(msg, 429)
+    }
     throw new ApiError(data?.detail || data?.error || `Request failed (${res.status})`, res.status)
   }
   return data
 }
 
+const DEFAULT_HEADERS = {
+  Accept: 'application/json',
+  'X-Saksham-Client': 'web-v0.3',
+}
+
 export async function apiGet(path, { signal } = {}) {
-  const res = await fetch(`${API_BASE}${path}`, { signal, headers: { Accept: 'application/json' } })
+  const res = await fetch(`${API_BASE}${path}`, {
+    signal,
+    headers: { ...DEFAULT_HEADERS },
+  })
   return handleResponse(res)
 }
 
@@ -33,7 +45,7 @@ export async function apiPost(path, body, { signal } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     signal,
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: { ...DEFAULT_HEADERS, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
   return handleResponse(res)
@@ -45,6 +57,7 @@ export async function apiUpload(path, file, { signal } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     signal,
+    headers: { 'X-Saksham-Client': 'web-v0.3' },
     body: formData,
   })
   return handleResponse(res)

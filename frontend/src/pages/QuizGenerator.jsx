@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FileQuestion, Upload, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react'
 import Card from '../components/ui/Card'
@@ -8,7 +8,7 @@ import Select from '../components/ui/Select'
 import EmptyState from '../components/ui/EmptyState'
 import QuizQuestion from '../components/features/QuizQuestion'
 import PageWrapper from '../components/layout/PageWrapper'
-import { apiPost, apiUpload } from '../lib/api'
+import { apiGet, apiPost, apiUpload } from '../lib/api'
 import { DIFFICULTY_OPTIONS } from '../constants/courses'
 import toast from 'react-hot-toast'
 
@@ -22,12 +22,24 @@ const questionOptions = [
 export default function QuizGenerator() {
   const [file, setFile] = useState(null)
   const [uploadResult, setUploadResult] = useState(null)
-  const [query, setQuery] = useState('')
+  const [extractedTopics, setExtractedTopics] = useState([])
+  const [selectedTopic, setSelectedTopic] = useState('all')
+  const [customQuery, setCustomQuery] = useState('')
   const [numQuestions, setNumQuestions] = useState(5)
   const [difficulty, setDifficulty] = useState('mixed')
   const [quiz, setQuiz] = useState(null)
   const [loading, setLoading] = useState(false)
   const [answers, setAnswers] = useState({})
+
+  useEffect(() => {
+    apiGet('/document-topics')
+      .then((data) => {
+        if (data?.topics?.length) {
+          setExtractedTopics(data.topics)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const upload = async () => {
     if (!file) return
@@ -35,6 +47,10 @@ export default function QuizGenerator() {
     try {
       const data = await apiUpload('/upload-document', file)
       setUploadResult(data)
+      if (data.topics && data.topics.length > 0) {
+        setExtractedTopics(data.topics)
+        setSelectedTopic(data.topics[0])
+      }
       toast.success(`Uploaded ${data.chunks_stored} chunks from ${data.filename}`)
     } catch (err) {
       toast.error(err.message || 'Failed to upload document')
@@ -45,7 +61,12 @@ export default function QuizGenerator() {
   const generate = async () => {
     setLoading(true)
     try {
-      const data = await apiPost('/generate-quiz', { query, num_questions: numQuestions, difficulty })
+      const finalQuery = selectedTopic === 'custom' ? customQuery : (selectedTopic === 'all' ? '' : selectedTopic)
+      const data = await apiPost('/generate-quiz', {
+        query: finalQuery,
+        num_questions: numQuestions,
+        difficulty,
+      })
       setQuiz(data)
       setAnswers({})
       toast.success(`Generated ${data.questions.length} questions`)
@@ -64,6 +85,12 @@ export default function QuizGenerator() {
     setAnswers({})
   }
 
+  const topicOptions = [
+    { value: 'all', label: 'All Topics (Comprehensive Quiz)' },
+    ...extractedTopics.map((t) => ({ value: t, label: t })),
+    { value: 'custom', label: 'Custom topic or search query...' },
+  ]
+
   const totalQuestions = quiz?.questions?.length ?? 0
   const answeredCount = Object.keys(answers).length
   const score = quiz?.questions?.reduce((acc, q, i) => (answers[i] === q.correct_answer ? acc + 1 : acc), 0) ?? 0
@@ -77,7 +104,7 @@ export default function QuizGenerator() {
             <FileQuestion className="h-8 w-8 text-indigo-600" aria-hidden="true" />
             AI Quiz Generator
           </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">Upload documents and auto-generate MCQs using RAG</p>
+          <p className="mt-2 text-slate-600 dark:text-slate-400">Upload documents, select extracted topics, and auto-generate MCQs</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -119,7 +146,9 @@ export default function QuizGenerator() {
                 <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-hidden="true" />
                 <div>
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Uploaded successfully</p>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-500">Chunks stored: {uploadResult.chunks_stored}</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-500">
+                    Chunks stored: {uploadResult.chunks_stored} &middot; {extractedTopics.length} topics extracted
+                  </p>
                 </div>
               </motion.div>
             )}
@@ -131,12 +160,47 @@ export default function QuizGenerator() {
               2. Generate Quiz
             </h2>
             <div className="space-y-4">
-              <Input
-                label="Topic / Query"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g., GDP calculation methods"
+              <Select
+                label="Topic Selection"
+                value={selectedTopic}
+                onChange={(e) => setSelectedTopic(e.target.value)}
+                options={topicOptions}
               />
+
+              {selectedTopic === 'custom' && (
+                <Input
+                  label="Custom Query / Specific Topic"
+                  value={customQuery}
+                  onChange={(e) => setCustomQuery(e.target.value)}
+                  placeholder="e.g., GDP calculation methods or specific indicator"
+                  required
+                />
+              )}
+
+              {extractedTopics.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Quick Select from Extracted Topics:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {extractedTopics.map((topic) => (
+                      <button
+                        key={topic}
+                        type="button"
+                        onClick={() => setSelectedTopic(topic)}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                          selectedTopic === topic
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'border border-slate-200 bg-slate-50 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {topic}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <Select
                   label="Questions"
@@ -151,7 +215,12 @@ export default function QuizGenerator() {
                   options={DIFFICULTY_OPTIONS}
                 />
               </div>
-              <Button onClick={generate} disabled={!uploadResult} loading={loading} className="w-full">
+              <Button
+                onClick={generate}
+                disabled={!uploadResult && extractedTopics.length === 0}
+                loading={loading}
+                className="w-full"
+              >
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 Generate Quiz
               </Button>

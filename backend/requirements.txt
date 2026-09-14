@@ -8,3 +8,5 @@ chromadb
 sentence-transformers
 python-multipart
 groq
+python-dotenv
+slowapi>=0.1.10

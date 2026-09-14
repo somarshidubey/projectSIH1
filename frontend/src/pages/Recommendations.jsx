@@ -8,7 +8,7 @@ import CourseCard from '../components/features/CourseCard'
 import LearningPathStep from '../components/features/LearningPathStep'
 import PageWrapper from '../components/layout/PageWrapper'
 import { useAuth } from '../context/AuthContext'
-import { sampleHistory } from '../data/sampleData'
+import { sampleHistory, roleOptions } from '../data/sampleData'
 import { apiGet, apiPost } from '../lib/api'
 import toast from 'react-hot-toast'
 
@@ -17,6 +17,8 @@ export default function Recommendations() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [courses, setCourses] = useState([])
+
+  const roleLabel = roleOptions.find((r) => r.value === user?.role)?.label || user?.role || 'Statistical Officer'
 
   useEffect(() => {
     const controller = new AbortController()
@@ -31,8 +33,8 @@ export default function Recommendations() {
     try {
       const data = await apiPost('/recommendations', {
         officer_id: user?.id || 'MOFSI-001',
-        name: user?.name || 'Rajesh Kumar',
-        role: user?.role || 'deputy_director',
+        name: user?.name || 'Officer',
+        role: user?.role || 'statistical_officer',
         competency_history: sampleHistory,
       })
       setResult(data)
@@ -66,7 +68,7 @@ export default function Recommendations() {
         <Card>
           <h2 className="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">Get Personalized Recommendations</h2>
           <p className="mb-4 text-slate-600 dark:text-slate-400">
-            Generate course recommendations for Rajesh Kumar (Deputy Director) based on detected gaps.
+            Generate course recommendations for {user?.name || 'your profile'} ({roleLabel}) based on detected gaps.
           </p>
           <Button onClick={getRecommendations} loading={loading}>
             <GraduationCap className="h-4 w-4" aria-hidden="true" />

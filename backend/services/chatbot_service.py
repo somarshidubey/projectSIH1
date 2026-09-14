@@ -14,12 +14,7 @@ runs locally.
 """
 
 import os
-from dotenv import load_dotenv
 from groq import Groq
-
-from pathlib import Path
-
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 SYSTEM_PROMPT = """You are "Saksham Assistant", the built-in help chatbot for \

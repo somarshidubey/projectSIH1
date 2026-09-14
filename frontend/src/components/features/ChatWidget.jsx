@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { apiPost } from '../../lib/api'
 
 const WELCOME_MESSAGE = {
@@ -133,13 +135,90 @@ export default function ChatWidget() {
                     )}
                   </div>
                   <div
-                    className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                    className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                       msg.role === 'user'
-                        ? 'rounded-tr-sm bg-indigo-600 text-white'
+                        ? 'rounded-tr-sm bg-indigo-600 text-white whitespace-pre-wrap'
                         : 'rounded-tl-sm bg-white text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-200'
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === 'user' ? (
+                      msg.content
+                    ) : (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ node: _node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                          strong: ({ node: _node, ...props }) => (
+                            <strong className="font-semibold text-slate-900 dark:text-slate-100" {...props} />
+                          ),
+                          em: ({ node: _node, ...props }) => <em className="italic" {...props} />,
+                          ul: ({ node: _node, ...props }) => (
+                            <ul className="mb-2 list-disc pl-4 space-y-1 last:mb-0" {...props} />
+                          ),
+                          ol: ({ node: _node, ...props }) => (
+                            <ol className="mb-2 list-decimal pl-4 space-y-1 last:mb-0" {...props} />
+                          ),
+                          li: ({ node: _node, ...props }) => <li className="leading-relaxed" {...props} />,
+                          pre: ({ node: _node, ...props }) => (
+                            <pre
+                              className="my-1.5 overflow-x-auto rounded-lg bg-slate-100 p-2 font-mono text-xs text-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                              {...props}
+                            />
+                          ),
+                          code: ({ node: _node, className, children, ...props }) => {
+                            const isInline = !className && typeof children === 'string' && !children.includes('\n')
+                            if (isInline) {
+                              return (
+                                <code
+                                  className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-indigo-600 dark:bg-slate-700/60 dark:text-indigo-300"
+                                  {...props}
+                                >
+                                  {children}
+                                </code>
+                              )
+                            }
+                            return (
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
+                            )
+                          },
+                          a: ({ node: _node, ...props }) => (
+                            <a
+                              className="font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              {...props}
+                            />
+                          ),
+                          blockquote: ({ node: _node, ...props }) => (
+                            <blockquote
+                              className="my-1.5 border-l-2 border-indigo-400 pl-2.5 italic text-slate-600 dark:border-indigo-500 dark:text-slate-400"
+                              {...props}
+                            />
+                          ),
+                          table: ({ node: _node, ...props }) => (
+                            <div className="my-2 overflow-x-auto">
+                              <table className="w-full text-xs border-collapse" {...props} />
+                            </div>
+                          ),
+                          th: ({ node: _node, ...props }) => (
+                            <th
+                              className="border-b border-slate-200 px-2 py-1 text-left font-semibold text-slate-900 dark:border-slate-700 dark:text-slate-100"
+                              {...props}
+                            />
+                          ),
+                          td: ({ node: _node, ...props }) => (
+                            <td
+                              className="border-b border-slate-100 px-2 py-1 text-slate-700 dark:border-slate-800 dark:text-slate-300"
+                              {...props}
+                            />
+                          ),
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </div>
               ))}

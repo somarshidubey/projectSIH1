@@ -1,28 +1,153 @@
 """
 Quiz Generator
 Uses RAG to retrieve relevant context from uploaded documents
-and generates MCQs using a template-based approach (no external LLM needed).
+and generates high-quality MCQs using an LLM (Groq-hosted) with an upgraded
+offline NLP fallback engine. Also extracts major topics/sections from documents.
 """
 
+import os
+import json
 import random
 import re
+from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 from .vector_store import VectorStore
 
 
 class QuizGenerator:
-    """Generates MCQs from uploaded documents using RAG."""
+    """Generates MCQs and extracts major topics from uploaded documents using RAG."""
 
     def __init__(self):
         self.vector_store = VectorStore()
+        # In-memory storage of extracted topics keyed by filename
+        self.document_topics: Dict[str, List[str]] = {}
+
+    def extract_topics(self, content: str) -> List[str]:
+        """
+        Extract 4 to 8 major topics/concepts from the document content.
+        Uses Groq LLM if available, with an NLP heuristic fallback.
+        """
+        api_key = os.environ.get("GROQ_API_KEY")
+        model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+
+        if api_key:
+            try:
+                from groq import Groq
+                client = Groq(api_key=api_key)
+                prompt = (
+                    "Analyze the following document text and extract 5 to 8 clear, specific major topics, "
+                    "concepts, or sections covered in the document that would be ideal for generating quiz questions.\n"
+                    "Requirements:\n"
+                    "- Return ONLY a valid JSON list of strings (e.g. [\"Topic 1\", \"Topic 2\", \"Topic 3\"]).\n"
+                    "- Keep topic names concise and professional (2 to 6 words each).\n"
+                    "- Do not include markdown codeblocks, numbering, or explanation.\n\n"
+                    f"Document Content (sample):\n{content[:4000]}"
+                )
+
+                resp = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=300,
+                    temperature=0.2,
+                )
+                text = resp.choices[0].message.content.strip()
+                # Strip codeblocks if present
+                if "```" in text:
+                    text = re.sub(r'```(?:json)?\s*', '', text).strip('` \n\r')
+
+                parsed = json.loads(text)
+                if isinstance(parsed, list) and len(parsed) >= 2:
+                    return [str(t).strip() for t in parsed if isinstance(t, str) and len(t.strip()) >= 3][:8]
+            except Exception:
+                pass  # Fallback to NLP heuristics
+
+        return self._extract_topics_nlp(content)
+
+    def _extract_topics_nlp(self, content: str) -> List[str]:
+        """Extract major topics using pattern matching and NLP heuristics."""
+        topics = []
+        seen = set()
+
+        def add_topic(raw: str):
+            t = raw.strip(" \t\r\n:.-#*\"'")
+            # Remove leading numbers/bullets (e.g. "1. ", "2.1 ")
+            t = re.sub(r'^\d+[\.\)]\s*', '', t).strip()
+            # Clean leading "The " and trailing verbs
+            t = re.sub(r'^The\s+', '', t, flags=re.IGNORECASE).strip()
+            t = re.sub(r'\s+(?:include|includes|refer to|is defined as).*$', '', t, flags=re.IGNORECASE).strip()
+
+            if not t or len(t) < 4 or len(t) > 55:
+                return
+            lower = t.lower()
+            if lower in ("table of contents", "introduction", "chapter", "section", "summary", "references", "overview", "index"):
+                return
+
+            if lower not in seen:
+                seen.add(lower)
+                topics.append(t)
+
+        lines = content.splitlines()
+        for line in lines:
+            line_s = line.strip()
+            if not line_s:
+                continue
+            if line_s.startswith("#"):
+                add_topic(line_s.lstrip("#").strip())
+            elif ":" in line_s:
+                prefix = line_s.split(":")[0].strip()
+                if len(prefix) <= 45 and re.search(r'[A-Za-z]', prefix) and not re.match(r'^\d+:\d+', prefix):
+                    add_topic(prefix)
+
+        # Technical terms with acronyms: e.g. "National Accounts Statistics (NAS)"
+        for m in re.finditer(r'([A-Z][a-zA-Z\s]{3,40}\s*\([A-Z0-9]{2,8}\))', content):
+            add_topic(m.group(1).strip())
+
+        # Definition subjects
+        for m in re.finditer(r'(?:^|\.\s+)(?:The\s+)?([A-Z][a-zA-Z\s]{3,40}(?:\([A-Z0-9]+\))?)\s+(?:is\s+a|is\s+defined|refers\s+to|provides|follows)', content):
+            add_topic(m.group(1).strip())
+
+        # Prominent capitalized multi-word phrases
+        for m in re.finditer(r'(?:^|\.\s+)(?:Under\s+the\s+|In\s+the\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})', content):
+            cand = m.group(1).strip()
+            if cand.lower() not in ("the central", "india s", "the national", "all rights"):
+                add_topic(cand)
+
+        return topics[:8]
 
     def ingest_document(self, filename: str, content: str) -> dict:
-        """Store a document for later quiz generation."""
+        """Store a document in vector store and extract its major topics."""
         num_chunks = self.vector_store.add_document(filename, content)
+        topics = self.extract_topics(content)
+        self.document_topics[filename] = topics
+
         return {
             "filename": filename,
             "chunks_stored": num_chunks,
+            "topics": topics,
             "status": "ingested",
         }
+
+    def get_all_topics(self) -> List[str]:
+        """Return combined unique topics extracted from all ingested documents."""
+        all_topics = []
+        seen = set()
+        for t_list in self.document_topics.values():
+            for t in t_list:
+                k = t.lower()
+                if k not in seen:
+                    seen.add(k)
+                    all_topics.append(t)
+        return all_topics
+
+    def get_store_stats(self) -> dict:
+        """Get stats about stored documents and chunks."""
+        stats = self.vector_store.get_stats()
+        stats["topics_count"] = len(self.get_all_topics())
+        stats["documents_indexed"] = len(self.document_topics)
+        return stats
+
 
     def generate_quiz(
         self,
@@ -32,17 +157,13 @@ class QuizGenerator:
         source: str = None,
     ) -> dict:
         """
-        Generate MCQs based on retrieved context.
-
-        query:          what to generate questions about
-        num_questions:  how many MCQs to generate
-        difficulty:     "easy", "medium", "hard", or "mixed"
-        source:         optional filename to filter by
-
-        Returns: dict with questions list
+        Generate high quality MCQs based on retrieved context.
+        Uses Groq LLM if available, with an enhanced rule-based fallback.
         """
+        search_query = query.strip() if query and query.strip() and query.strip().lower() != "all" else "overview concepts definitions methodology"
+
         # Step 1: Retrieve relevant chunks
-        retrieved = self.vector_store.search(query, top_k=8)
+        retrieved = self.vector_store.search(search_query, top_k=8)
 
         if not retrieved:
             return {
@@ -50,368 +171,275 @@ class QuizGenerator:
                 "questions": [],
             }
 
-        # Combine retrieved chunks into context
-        context = "\n".join([r["text"] for r in retrieved])
+        context = "\n\n".join([r["text"] for r in retrieved])
 
-        # Step 2: Extract candidate sentences (facts) from the context
-        facts = self._extract_facts(context)
+        # Step 2: Try LLM-based MCQ generation
+        llm_result = self._generate_with_llm(context, query, num_questions, difficulty)
+        if llm_result:
+            return {
+                "query": query,
+                "num_questions": len(llm_result),
+                "difficulty": difficulty,
+                "context_chunks_used": len(retrieved),
+                "engine": "llm",
+                "questions": llm_result,
+            }
 
-        # Step 3: Generate MCQs until we reach the requested number
-        # (or run out of usable sentences, whichever comes first)
-        questions = []
-        used_facts = set()
-        for fact in facts:
-            if len(questions) >= num_questions:
-                break
-            q = self._create_mcq(fact, context, difficulty, len(questions))
-            # Deduplicate by the underlying answer/fact (questions that share
-            # an identical stem such as "which statement is correct?" are still
-            # distinct MCQs, so we must NOT deduplicate on the question text).
-            if q and q["explanation"] not in used_facts:
-                used_facts.add(q["explanation"])
-                questions.append(q)
+        # Step 3: Upgraded Rule-based Fallback
+        fallback_questions = self._generate_with_rules(context, query, num_questions, difficulty)
 
         return {
             "query": query,
-            "num_questions": len(questions),
+            "num_questions": len(fallback_questions),
             "difficulty": difficulty,
             "context_chunks_used": len(retrieved),
-            "questions": questions,
+            "engine": "nlp_fallback",
+            "questions": fallback_questions,
         }
 
-    def _extract_facts(self, context: str) -> list[dict]:
-        """
-        Extract candidate sentences from the context that are meaningful enough
-        to become quiz questions. Keeps every reasonably-sized, content-rich
-        sentence rather than a tiny filtered subset, so we can reach the target
-        question count.
-        """
-        facts = []
-        sentences = re.split(r'(?<=[.!?])\s+', context)
+    def _generate_with_llm(
+        self, context: str, topic: str, num_questions: int, difficulty: str
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Call Groq LLM to generate high quality exam-standard MCQs."""
+        api_key = os.environ.get("GROQ_API_KEY")
+        model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 
-        for sentence in sentences:
-            sentence = sentence.strip()
-            # Skip headers, very short fragments, and acronym-only lines
-            # like "PO CO" by requiring a minimum length and a wordy structure.
-            if len(sentence) < 40:
-                continue
-            if _looks_like_header(sentence):
-                continue
-            # Skip sentences contaminated by chunk-boundary header remnants
-            # (e.g. "ethods & National Accounts\n  Chapter 2: ...\n2.1 ...").
-            if _looks_fragmented(sentence):
-                continue
-
-            # Classify the kind of fact so we can ask a meaningful question type
-            has_number = bool(re.search(r'\d+', sentence))
-            has_definition = any(
-                word in sentence.lower()
-                for word in ["is defined as", "refers to", "means", "known as", "called", "is a"]
-            )
-            has_comparison = any(
-                word in sentence.lower()
-                for word in ["higher than", "lower than", "more than", "less than", "compared"]
-            )
-
-            fact_type = "definition" if has_definition else "number" if has_number else "general"
-            if has_comparison:
-                fact_type = "comparison"
-
-            facts.append({
-                "text": sentence,
-                "type": fact_type,
-            })
-
-        # Deduplicate similar facts
-        unique_facts = []
-        seen = set()
-        for f in facts:
-            key = f["text"][:60].lower()
-            if key not in seen:
-                seen.add(key)
-                unique_facts.append(f)
-
-        return unique_facts
-
-    def _create_mcq(self, fact: dict, full_context: str, difficulty: str, index: int) -> dict:
-        """
-        Create one MCQ from a fact.
-
-        Builds a proper question stem, pairs it with a correct answer, and
-        generates plausible distractors so every question has 4 options.
-        """
-        fact_text = fact["text"]
-        fact_type = fact["type"]
-
-        question, correct_answer = self._build_question_and_answer(fact_text, fact_type)
-        if not question:
+        if not api_key:
             return None
 
-        distractors = self._generate_distractors(
-            correct_answer, fact_type, fact_text, full_context
-        )
-        if len(distractors) < 3:
-            return None
+        try:
+            from groq import Groq
+            client = Groq(api_key=api_key)
 
-        # Build 4 options and shuffle them
-        options = [correct_answer] + distractors[:3]
-        random.shuffle(options)
-        correct_letter = chr(65 + options.index(correct_answer))  # A, B, C, or D
+            system_prompt = (
+                "You are an expert exam author creating high-quality multiple choice questions (MCQs) "
+                "for official government officers and analysts based strictly on the provided source text.\n\n"
+                "Guidelines:\n"
+                f"1. Generate exactly {num_questions} questions covering the topic '{topic}' (difficulty: {difficulty}).\n"
+                "2. Each question MUST test specific definitions, methodologies, formulas, indicators, or facts explicitly stated in the context.\n"
+                "3. Each question must have exactly 4 plausible options labeled A), B), C), D).\n"
+                "4. Specify the correct_answer as a single letter: 'A', 'B', 'C', or 'D'.\n"
+                "5. Provide a 1-2 sentence explanation citing the document context.\n"
+                "6. Return ONLY valid JSON with no markdown wrapping or preamble, matching this exact structure:\n"
+                "{\n"
+                '  "questions": [\n'
+                "    {\n"
+                '      "question": "What is the primary methodology...",\n'
+                '      "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],\n'
+                '      "correct_answer": "A",\n'
+                '      "explanation": "According to the document...",\n'
+                '      "difficulty": "medium"\n'
+                "    }\n"
+                "  ]\n"
+                "}"
+            )
 
-        # Map difficulty
-        if difficulty == "mixed":
-            diff = random.choice(["easy", "medium", "hard"])
-        else:
-            diff = difficulty
+            user_prompt = f"Source Document Context:\n{context[:6000]}\n\nGenerate {num_questions} MCQs for topic: '{topic}'"
 
-        return {
-            "question": question,
-            "options": [f"{chr(65+i)}) {opt}" for i, opt in enumerate(options)],
-            "correct_answer": correct_letter,
-            "explanation": fact_text,
-            "difficulty": diff,
-            "source_chunk": fact_text[:200],
-        }
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                max_tokens=1500,
+                temperature=0.3,
+            )
 
-    def _build_question_and_answer(self, fact: str, fact_type: str) -> tuple:
-        """
-        Return a (question, correct_answer) pair that reads like a real MCQ,
-        rather than a clipped sentence fragment.
-        """
-        # 1) Number-based fact: ask for the value and use the number as answer
-        if fact_type == "number" or fact_type == "comparison":
-            number_matches = list(re.finditer(r'\d+(?:[.,]\d+)*\s*%?', fact))
-            if number_matches:
-                # Use the first explicit numeric value as the answer
-                # (using the last can pick up the tail of a date range)
-                match = number_matches[0]
-                value = match.group(0).strip()
-                before = fact[: match.start()].strip()
-                topic = _clean_topic(before)
-                if topic and value:
-                    question = f"According to the document, what is the value related to {topic}?"
-                    return question, value
+            raw_text = resp.choices[0].message.content.strip()
+            # Clean markdown code blocks
+            if "```" in raw_text:
+                raw_text = re.sub(r'```(?:json)?\s*', '', raw_text).strip('` \n\r')
 
-        # 2) Definition-based fact: ask "What is X?"
-        if fact_type == "definition":
-            m = re.search(
-                r'^(.{3,60}?)\s+(?:is defined as|refers to|means|is known as|is called|is)\s+(.+)$',
-                fact,
+            data = json.loads(raw_text)
+            raw_questions = data.get("questions", []) if isinstance(data, dict) else data
+
+            parsed_questions = []
+            for item in raw_questions:
+                if not isinstance(item, dict):
+                    continue
+                q_text = item.get("question", "").strip()
+                if not q_text:
+                    continue
+
+                raw_opts = item.get("options", [])
+                formatted_opts = []
+
+                if isinstance(raw_opts, dict):
+                    # Handle {"A": "text", "B": "text", ...}
+                    for letter in ["A", "B", "C", "D"]:
+                        val = raw_opts.get(letter, "").strip()
+                        formatted_opts.append(f"{letter}) {val}" if val else f"{letter}) Option")
+                elif isinstance(raw_opts, list):
+                    for idx, opt in enumerate(raw_opts[:4]):
+                        opt_s = str(opt).strip()
+                        letter = chr(65 + idx)
+                        if not re.match(r'^[A-D]\)', opt_s):
+                            opt_s = f"{letter}) {opt_s}"
+                        formatted_opts.append(opt_s)
+
+                if len(formatted_opts) < 4:
+                    continue
+
+                # Clean correct answer
+                ans = str(item.get("correct_answer") or item.get("answer", "A")).strip().upper()
+                if ans not in ("A", "B", "C", "D"):
+                    match = re.search(r'\b([A-D])\b', ans)
+                    ans = match.group(1) if match else "A"
+
+                parsed_questions.append({
+                    "question": q_text,
+                    "options": formatted_opts,
+                    "correct_answer": ans,
+                    "explanation": item.get("explanation", "Refer to the source document context for full details."),
+                    "difficulty": item.get("difficulty", difficulty if difficulty != "mixed" else "medium"),
+                    "source_chunk": context[:200],
+                })
+
+            if len(parsed_questions) >= 1:
+                return parsed_questions[:num_questions]
+        except Exception:
+            pass
+
+        return None
+
+    def _generate_with_rules(
+        self, context: str, query: str, num_questions: int, difficulty: str
+    ) -> List[Dict[str, Any]]:
+        """Upgraded rule-based generator for conceptual, specific MCQs."""
+        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', context) if len(s.strip()) > 35]
+        questions = []
+        seen_stems = set()
+
+        for s in sentences:
+            if len(questions) >= num_questions:
+                break
+
+            mcq = None
+            # 1. Definition matcher
+            m_def = re.search(
+                r'^(?:The\s+)?([A-Z][a-zA-Z\s]{2,45}(?:\([A-Z0-9]+\))?)\s+(?:is defined as|refers to|means|is a|provides)\s+(.+)$',
+                s,
                 re.IGNORECASE,
             )
-            if m and len(m.group(2)) > 15:
-                subject = _clean_subject(m.group(1).strip())
-                definition = _clean_definition(m.group(2).strip())
-                question = f"What best describes {subject}?"
-                return question, definition
+            if m_def:
+                subject = m_def.group(1).strip()
+                meaning = m_def.group(2).strip().rstrip('.')
+                if len(meaning) > 15:
+                    q_text = f"According to the document, what best describes {subject}?"
+                    if q_text not in seen_stems:
+                        distractors = self._build_distractors(meaning, sentences)
+                        options = [f"A) {meaning}"] + [f"{chr(66+i)}) {d}" for i, d in enumerate(distractors[:3])]
+                        random.shuffle(options)
+                        # Find correct index
+                        correct_idx = next(i for i, opt in enumerate(options) if opt.endswith(meaning))
+                        correct_letter = chr(65 + correct_idx)
+                        mcq = {
+                            "question": q_text,
+                            "options": [f"{chr(65+i)}) {opt[3:]}" for i, opt in enumerate(options)],
+                            "correct_answer": correct_letter,
+                            "explanation": s,
+                            "difficulty": "medium",
+                            "source_chunk": s[:200],
+                        }
 
-        # 3) Fallback: treat a full sentence as a "which statement is correct" question
-        cleaned = _clean_definition(fact)
-        return f"Based on the document, which of the following statements is correct?", cleaned
+            # 2. Number/Indicator matcher (skipping section labels like 2.1)
+            if not mcq:
+                m_num = re.search(r'([A-Z][a-zA-Z\s]{2,35})\s+(?:was|is|reached|declined to|stood at)\s+(\d+(?:\.\d+)?(?:\s*%)?)', s)
+                if m_num and not _is_section_number(m_num.group(2)):
+                    indicator = m_num.group(1).strip()
+                    val = m_num.group(2).strip()
+                    q_text = f"According to the document, what was the reported value for {indicator}?"
+                    if q_text not in seen_stems:
+                        num_distractors = self._build_num_distractors(val)
+                        all_opts = [val] + num_distractors[:3]
+                        random.shuffle(all_opts)
+                        correct_letter = chr(65 + all_opts.index(val))
+                        mcq = {
+                            "question": q_text,
+                            "options": [f"{chr(65+i)}) {opt}" for i, opt in enumerate(all_opts)],
+                            "correct_answer": correct_letter,
+                            "explanation": s,
+                            "difficulty": "easy",
+                            "source_chunk": s[:200],
+                        }
 
-    def _generate_distractors(self, correct: str, fact_type: str, fact_text: str, context: str) -> list[str]:
-        """
-        Generate 3+ plausible wrong answers (distractors) matching the type of
-        the correct answer.
+            # 3. Method / System matcher
+            if not mcq and any(kw in s.lower() for kw in ["method", "system", "approach", "framework"]):
+                m_sub = re.search(r'(?:^|\.\s+)(?:The\s+)?([A-Z][a-zA-Z\s]{2,35})\s+uses\s+(?:a\s+)?([^,.]+)', s, re.IGNORECASE)
+                if m_sub:
+                    entity = m_sub.group(1).strip()
+                    method = m_sub.group(2).strip()
+                    q_text = f"Which method or approach does {entity} utilize according to the text?"
+                    if q_text not in seen_stems and len(method) > 5:
+                        distractors = ["Single sample retrospective survey", "Decennial census enumeration", "Linear extrapolation model"]
+                        all_opts = [method] + distractors
+                        random.shuffle(all_opts)
+                        correct_letter = chr(65 + all_opts.index(method))
+                        mcq = {
+                            "question": q_text,
+                            "options": [f"{chr(65+i)}) {opt}" for i, opt in enumerate(all_opts)],
+                            "correct_answer": correct_letter,
+                            "explanation": s,
+                            "difficulty": "medium",
+                            "source_chunk": s[:200],
+                        }
 
-        - number/comparison: distractors are other numbers from the context or
-          numerically-mangled versions of the correct value.
-        - definition/general: distractors are other meaningful statements from
-          the context, plus (if needed) slightly mutated versions.
-        """
-        distractors = []
+            if mcq:
+                seen_stems.add(mcq["question"])
+                questions.append(mcq)
 
-        if fact_type in ("number", "comparison"):
-            return self._extract_number_distractors(correct, context)
+        return questions
 
-        # Definition / general: use other full sentences as distractors
-        sentences = re.split(r'(?<=[.!?])\s+', context)
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if not sentence or len(sentence) < 40:
-                continue
-            if _looks_like_header(sentence):
-                continue
-            candidate = _clean_definition(sentence)
-            if not candidate or candidate == correct:
-                continue
-            if candidate not in distractors:
-                distractors.append(candidate)
-            if len(distractors) >= 4:
+    def _build_distractors(self, correct: str, sentences: List[str]) -> List[str]:
+        """Produce alternative plausible phrase distractors."""
+        pool = []
+        for s in sentences:
+            m = re.search(r'(?:is defined as|refers to|means|is a|provides)\s+(.+)$', s, re.IGNORECASE)
+            if m:
+                cand = m.group(1).strip().rstrip('.')
+                if cand and cand != correct and cand not in pool and len(cand) > 10:
+                    pool.append(cand)
+
+        default_distractors = [
+            "A periodic survey covering commercial and non-profit institutions",
+            "A decennial administrative registry managed by municipal bodies",
+            "An international financial reporting benchmark established by the IMF",
+            "A preliminary quarterly estimation system for agricultural output"
+        ]
+        for d in default_distractors:
+            if len(pool) >= 3:
                 break
+            if d != correct and d not in pool:
+                pool.append(d)
 
-        # Fallback: mutate the correct definition by swapping a known keyword
-        if len(distractors) < 3:
-            fallback = self._mutate_definition(correct, context)
-            for f_ in fallback:
-                if f_ and f_ != correct and f_ not in distractors:
-                    distractors.append(f_)
-                if len(distractors) >= 3:
-                    break
+        return pool[:3]
 
-        return distractors[:4]
+    def _build_num_distractors(self, value_str: str) -> List[str]:
+        """Build realistic variations of a numerical value."""
+        is_pct = "%" in value_str
+        cleaned = value_str.replace("%", "").strip()
+        try:
+            num = float(cleaned)
+            v1 = num * 1.25
+            v2 = num * 0.75
+            v3 = num * 1.5
+            suffix = "%" if is_pct else ""
 
-    def _extract_number_distractors(self, correct: str, context: str) -> list[str]:
-        """Build number-based distractor options for a numeric answer."""
-        distractors = []
-        # 1) Other numbers that appear elsewhere in the context, skipping
-        #    section / figure labels (e.g. "2", "2.1", "1.3") which are
-        #    not meaningful answer options.
-        for m in re.finditer(r'\d+(?:[.,]\d+)*', context):
-            candidate = m.group(0).strip()
-            if candidate == correct:
-                continue
-            if _is_section_number(candidate):
-                continue
-            if candidate not in distractors:
-                distractors.append(candidate)
-            if len(distractors) >= 4:
-                break
+            def fmt(n):
+                return f"{int(n)}{suffix}" if n == int(n) else f"{n:.1f}{suffix}"
 
-        # 2) If not enough, mangle the correct number
-        if len(distractors) < 3:
-            number_matches = list(re.finditer(r'\d+(?:[.,]\d+)*', correct))
-            if number_matches:
-                base_number = number_matches[-1].group(0)
-                try:
-                    base_val = float(base_number.replace(",", ""))
-                except ValueError:
-                    base_val = None
-                if base_val is not None:
-                    for delta in [1, -1, 5, 10, 100, 0.5]:
-                        wrong_number = _format_number(base_val + delta)
-                        if wrong_number == base_number or wrong_number in distractors:
-                            continue
-                        distractors.append(wrong_number)
-                        if len(distractors) >= 3:
-                            break
-
-        return distractors
-
-    def _mutate_definition(self, correct: str, context: str) -> list[str]:
-        """Create plausible wrong statements by negating a sentence-keyword."""
-        mutations = []
-        # Try to swap a key phrase seen in other sentences' context
-        sentences = re.split(r'(?<=[.!?])\s+', context)
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if not sentence or len(sentence) < 40:
-                continue
-            words = sentence.split()
-            if len(words) > 6:
-                # replace the middle 4 words of the correct statement with
-                # the middle 4 words of another statement
-                mid = len(words) // 2
-                phrase = " ".join(words[mid : mid + 4])
-                wrong = correct.replace(
-                    " ".join(correct.split()[max(0, len(correct.split()) // 2 - 2): len(correct.split()) // 2 + 2]),
-                    phrase,
-                )
-                if wrong != correct:
-                    mutations.append(wrong)
-            if len(mutations) >= 3:
-                break
-        return mutations
-
-
-    def get_store_stats(self) -> dict:
-        """Get info about stored documents."""
-        return self.vector_store.get_stats()
-
-
-def _looks_like_header(text: str) -> bool:
-    """Detect heading-like fragments such as 'PO CO' or 'Chapter 1: ...'."""
-    # Pure acronym / short token strings (e.g. "PO CO", "GDP GVA GDP")
-    tokens = text.split()
-    if 1 <= len(tokens) <= 4:
-        all_acronyms = all(
-            re.fullmatch(r'[A-Z0-9][A-Z0-9&\-/\s]*', t) for t in tokens
-        )
-        # Skip if every token is short acronyms/uppercase abbreviations
-        if all_acronyms and all(len(t) <= 6 for t in tokens):
-            return True
-    # Heading pattern like "Chapter 1:", "Section 1.1", "3.1 Overview"
-    if re.match(r'^(chapter|section)\s+\d', text, re.IGNORECASE) or re.match(r'^\d+(\.\d+)*\s', text):
-        return True
-    return False
-
-
-def _looks_fragmented(text: str) -> bool:
-    """
-    Detect sentences contaminated by document/chunk artifacts: an embedded
-    heading or a truncated leading token (e.g. "ethods & ...", "...Chapter 2:").
-    Such fragments don't make for clean quiz questions.
-    """
-    # Contains an embedded heading line like "Chapter 2:" or "2.1" within it
-    if re.search(r'\n\s*(?:chapter|section)\s+\d', text, re.IGNORECASE):
-        return True
-    if re.search(r'\n\s*\d+(?:\.\d+)*[\s:].{0,30}', text):
-        return True
-    # Starts mid-word (a truncated leading token with no preceding whitespace)
-    first_token = re.split(r'\s+', text.strip())[0]
-    # e.g. "ethods", "hapter", or ends with "&" as a remnant
-    if first_token and (first_token.endswith('&') or not re.match(r'^[A-Z][a-zA-Z]*', first_token)):
-        return True
-    return False
-
-
-def _clean_subject(text: str) -> str:
-    """Clean up a definition subject for display in a question."""
-    text = text.strip().strip(':').strip()
-    # Strip leading section numbers like "2.1" or "GDP"
-    text = re.sub(r'^[\d.]+[:\s]+', '', text)
-    return text.strip()
-
-
-def _clean_topic(before: str) -> str:
-    """
-    Derive a clean topic phrase from the text preceding a number, dropping
-    trailing verbs / prepositions so the question reads naturally.
-
-    e.g. "India's IMR was" -> "India's IMR"
-         "the value related to for national accounts is" -> "the national accounts"
-    """
-    text = before.strip()
-    # strip trailing section labels / header remnants (e.g. "Chapter 2", "2.1", "... &")
-    text = re.sub(r'(?:chapter|section)\s*\d.*$', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'^\s*[^\w&]+&?\s*$', '', text)   # leading ampersand / symbol remnants
-    # stop words that usually follow the subject, not precede it
-    trailing = re.split(
-        r'\s+(?:is|are|was|were|has|had|have|of|to|for|per|in|at|by|from|the|a|an)\s*$',
-        text,
-        maxsplit=1,
-    )[0].strip()
-    trailing = trailing.rstrip(' ,:;')
-    # collapse the tail if it contains a filler phrase like "value related to"
-    words = re.split(r'\s+', trailing)
-    # keep at most the last 4 meaningful tokens
-    topic_words = words[-4:]
-    return " ".join(topic_words) if topic_words else "the value in the document"
+            return [fmt(v1), fmt(v2), fmt(v3)]
+        except ValueError:
+            return ["15", "25", "50"]
 
 
 def _is_section_number(value: str) -> bool:
-    """Return True if a number string looks like a document section/figure label."""
-    # Section labels like "2.1", "1.3.2"; also standalone tiny integers used
-    # as list markers ("2", "3") are excluded.
+    """Return True if a number looks like a section index (e.g. 2.1)."""
     if re.fullmatch(r'\d+(?:\.\d+)+', value):
         return True
     try:
         num = float(value.replace(",", ""))
+        return 0 < num < 3 and "." not in value
     except ValueError:
         return False
-    return 0 < num < 3
-
-
-def _clean_definition(text: str) -> str:
-    """Normalize a definition/statement for display as an option."""
-    text = text.strip()
-    if text.endswith('.'):
-        text = text[:-1]
-    return text
-
-
-def _format_number(value: float) -> str:
-    """Format a numeric value as a display string."""
-    if value == int(value):
-        return str(int(value))
-    return f"{value:.1f}"

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Target, TrendingUp, CheckCircle2, BarChart3, Pencil, X, Check } from 'lucide-react'
+import { Target, TrendingUp, CheckCircle2, BarChart3, Pencil, X, Check, RotateCcw } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Cell, ReferenceLine } from 'recharts'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -10,6 +10,7 @@ import ProgressBar from '../components/ui/ProgressBar'
 import GapCard from '../components/features/GapCard'
 import PageWrapper from '../components/layout/PageWrapper'
 import { useTheme } from '../context/ThemeContext'
+import { useAuth } from '../context/AuthContext'
 import { sampleHistory, roleOptions } from '../data/sampleData'
 import { apiPost } from '../lib/api'
 import toast from 'react-hot-toast'
@@ -65,15 +66,26 @@ const CustomRadarTooltip = ({ active, payload }) => {
 
 export default function GapAnalysis() {
   const { dark } = useTheme()
-  const [form, setForm] = useState({
-    officer_id: 'MOFSI-001',
-    name: 'Rajesh Kumar',
-    role: 'deputy_director',
-  })
+  const { user } = useAuth()
+  const [form, setForm] = useState(() => ({
+    officer_id: user?.id || 'MOFSI-001',
+    name: user?.name || 'Officer',
+    role: user?.role || 'deputy_director',
+  }))
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState(null)
+  const [prevUserId, setPrevUserId] = useState(user?.id)
+
+  if (user && user.id !== prevUserId) {
+    setPrevUserId(user.id)
+    setForm({
+      officer_id: user.id || 'MOFSI-001',
+      name: user.name || 'Officer',
+      role: user.role || 'deputy_director',
+    })
+  }
 
   const roleLabel = roleOptions.find((r) => r.value === form.role)?.label || form.role
 
@@ -89,6 +101,17 @@ export default function GapAnalysis() {
   const cancelEditing = () => {
     setEditForm(null)
     setEditing(false)
+  }
+
+  const resetToUserProfile = () => {
+    if (user) {
+      setForm({
+        officer_id: user.id || 'MOFSI-001',
+        name: user.name || 'Officer',
+        role: user.role || 'deputy_director',
+      })
+      toast.success('Reset to your profile')
+    }
   }
 
   const saveEditing = () => {
@@ -151,13 +174,24 @@ export default function GapAnalysis() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Officer Profile</h2>
             {!editing ? (
-              <button
-                onClick={startEditing}
-                className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-indigo-400"
-              >
-                <Pencil className="h-4 w-4" aria-hidden="true" />
-                Edit
-              </button>
+              <div className="flex items-center gap-3">
+                {user && (form.officer_id !== user.id || form.name !== user.name || form.role !== user.role) && (
+                  <button
+                    onClick={resetToUserProfile}
+                    className="flex items-center gap-1.5 text-xs font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                    Reset to my profile
+                  </button>
+                )}
+                <button
+                  onClick={startEditing}
+                  className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-indigo-400"
+                >
+                  <Pencil className="h-4 w-4" aria-hidden="true" />
+                  Edit
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button

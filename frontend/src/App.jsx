@@ -33,8 +33,8 @@ function ProtectedLayout() {
         Skip to main content
       </a>
       <Sidebar />
-      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       <ChatWidget />
+      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       <main id="main-content" role="main" className="min-h-screen pt-16 lg:ml-64 lg:pt-0">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           <AnimatePresence mode="wait">
