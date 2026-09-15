@@ -109,6 +109,43 @@
         "IOT_001": 2,
         "DDI_001": 3
       }
+    },
+    "ias": {
+      "title": "District Magistrate / Collector (IAS)",
+      "required_competencies": {
+        "FMT_001": 2,
+        "FMT_002": 3,
+        "NAS_001": 3,
+        "SRS_001": 2,
+        "DDI_001": 3,
+        "IOT_001": 2
+      }
+    },
+    "ips": {
+      "title": "Superintendent of Police (IPS)",
+      "required_competencies": {
+        "FMT_001": 2,
+        "SRS_001": 2,
+        "IOT_001": 3,
+        "DDI_001": 2
+      }
+    },
+    "revenue_officer": {
+      "title": "Revenue Officer (IRS / State Cadre)",
+      "required_competencies": {
+        "FMT_001": 2,
+        "FMT_002": 3,
+        "NAS_001": 2,
+        "DDI_001": 2
+      }
+    },
+    "section_officer": {
+      "title": "Section Officer",
+      "required_competencies": {
+        "FMT_001": 2,
+        "FMT_002": 1,
+        "DDI_001": 2
+      }
     }
   }
 }

@@ -38,7 +38,7 @@ export default function LearningPathStep({ step, index = 0 }) {
           href={step.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-slate-400 transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+          className="text-slate-400 transition-colors hover:text-[#cf492c]"
           aria-label={`Open ${step.course} on iGOT`}
         >
           <ExternalLink className="h-4 w-4" aria-hidden="true" />

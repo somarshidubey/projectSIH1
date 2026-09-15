@@ -1,0 +1,220 @@
+{
+  "meta": {
+    "description": "Designation-specific constitutional and legal framework references for AI question contextualization",
+    "last_updated": "2026-09-15"
+  },
+  "designation_mapping": {
+    "deputy_director": {
+      "designation_title": "Deputy Director",
+      "cadre_group": "Group A (Gazetted)",
+      "constitutional_articles": [
+        {"article": "Article 292", "title": "Borrowing by the Government of India", "relevance": "Fiscal statistics and government accounts oversight"},
+        {"article": "Article 293", "title": "Loans by the Centre to States", "relevance": "Inter-governmental fiscal data analysis"},
+        {"article": "Article 312", "title": "All-India Services", "relevance": "Administrative framework for statistical services"},
+        {"article": "Article 320", "title": "Functions of Public Service Commissions", "relevance": "Personnel management in statistical organizations"},
+        {"article": "Article 324", "title": "Superintendence of Election Commission", "relevance": "Electoral statistics and delimitation data"}
+      ],
+      "acts_and_rules": [
+        {"act": "Collection of Statistics Act, 2008", "sections": ["Section 3", "Section 5", "Section 8"], "relevance": "Primary legislation governing collection, compilation and publication of statistics in India"},
+        {"act": "Indian Census Act, 1948", "sections": ["Section 3", "Section 15"], "relevance": "Census data collection framework and confidentiality provisions"},
+        {"act": "Right to Information Act, 2005", "sections": ["Section 4", "Section 8"], "relevance": "Mandatory disclosure of statistical data and exemptions for sensitive data"},
+        {"act": "Official Secrets Act, 1923", "sections": ["Section 5"], "relevance": "Protection of classified statistical data and pre-publication embargo"},
+        {"act": "Indian Evidence Act, 1872", "sections": ["Section 35", "Section 57"], "relevance": "Evidentiary value of official statistics in legal proceedings"}
+      ],
+      "statutory_rules": [
+        {"rule": "Census Rules, 1990", "relevance": "Operational procedures for census field operations"},
+        {"rule": "Collection of Statistics (Central) Rules, 2011", "relevance": "Procedural framework for data collection under the 2008 Act"}
+      ],
+      "competency_contexts": {
+        "FMT_001": "Statistical analysis under the Collection of Statistics Act, 2008 requires officers to ensure accuracy in mathematical computations reported to Parliament.",
+        "FMT_002": "Macroeconomic indicators directly feed into Article 292 (government accounts) and Article 293 (inter-governmental loans) assessments.",
+        "NAS_001": "National Accounts Statistics form the basis of GDP estimates tabled under Article 292 and Article 112 (Annual Financial Statement).",
+        "SRS_001": "Sample Registration System data supports Census Act, 1948 reporting and vital statistics mandated under various state-level Acts.",
+        "DDI_001": "Data dissemination must comply with RTI Act, 2005 Section 4 mandatory disclosure requirements.",
+        "IOT_001": "IoT-based collection must comply with Official Secrets Act, 1923 provisions on data security."
+      }
+    },
+    "statistical_officer": {
+      "designation_title": "Statistical Officer",
+      "cadre_group": "Group A/B",
+      "constitutional_articles": [
+        {"article": "Article 51A(h)", "title": "Fundamental Duty — Scientific Temper", "relevance": "Duty to develop scientific temper and humanism through statistical inquiry"},
+        {"article": "Article 292", "title": "Borrowing by the Government of India", "relevance": "Fiscal data compilation for government accounts"},
+        {"article": "Article 112", "title": "Annual Financial Statement", "relevance": "Statistical data supporting Union Budget and financial statements"},
+        {"article": "Article 280", "title": "Finance Commission", "relevance": "Statistical data for fiscal devolution recommendations"},
+        {"article": "Article 350A", "title": "Facilities for instruction in mother-tongue", "relevance": "Multilingual data collection requirements"}
+      ],
+      "acts_and_rules": [
+        {"act": "Collection of Statistics Act, 2008", "sections": ["Section 3", "Section 4", "Section 5", "Section 7", "Section 8"], "relevance": "Core statistical collection, compilation, and publication framework"},
+        {"act": "Indian Census Act, 1948", "sections": ["Section 3", "Section 8", "Section 15"], "relevance": "Census field operations and respondent confidentiality"},
+        {"act": "Right to Information Act, 2005", "sections": ["Section 4", "Section 8(1)(a)"], "relevance": "Disclosure obligations and embargo protection for unreleased statistics"},
+        {"act": "Indian Penal Code", "sections": ["Section 176", "Section 193"], "relevance": "Penalties for false statistical reporting and non-compliance"},
+        {"act": "Prevention of Corruption Act, 1988", "sections": ["Section 13"], "relevance": "Anti-corruption provisions in data collection and reporting duties"}
+      ],
+      "statutory_rules": [
+        {"rule": "Collection of Statistics (Central) Rules, 2011", "relevance": "Procedures for notifying surveys and data collection instruments"},
+        {"rule": "National Statistical Commission (NSC) Rules", "relevance": "Standards for statistical practices and quality assurance"}
+      ],
+      "competency_contexts": {
+        "FMT_001": "Field officers applying statistical methods must comply with the Collection of Statistics Act, 2008 accuracy requirements (Section 5).",
+        "FMT_002": "Macroeconomic data compilation feeds directly into Article 112 (Annual Financial Statement) requirements.",
+        "NAS_001": "National Accounts computation follows NSC methodology standards and feeds GDP estimates under Article 292.",
+        "SRS_001": "Sample Registration operations are governed by the Census Act, 1948 and NSC quality standards.",
+        "DDI_001": "Dissemination must balance RTI Act, 2005 Section 4 disclosure with Section 8 embargo provisions.",
+        "IOT_001": "Digital data collection tools must comply with data protection norms under the IT Act, 2000."
+      }
+    },
+    "joint_secretary": {
+      "designation_title": "Joint Secretary",
+      "cadre_group": "Senior Group A (Super Time Scale)",
+      "constitutional_articles": [
+        {"article": "Article 112", "title": "Annual Financial Statement", "relevance": "Statistical inputs for Union Budget and financial planning"},
+        {"article": "Article 280", "title": "Finance Commission", "relevance": "High-level statistical data for fiscal devolution"},
+        {"article": "Article 292", "title": "Borrowing by the Government of India", "relevance": "Aggregate fiscal statistics oversight"},
+        {"article": "Article 312", "title": "All-India Services", "relevance": "Policy oversight of statistical service cadre"},
+        {"article": "Article 350", "title": "Language Facilities", "relevance": "Multilingual statistical reporting obligations"},
+        {"article": "Article 356", "title": "President's Rule", "relevance": "Emergency data collection and reporting requirements"}
+      ],
+      "acts_and_rules": [
+        {"act": "Collection of Statistics Act, 2008", "sections": ["Section 3", "Section 5", "Section 6", "Section 8", "Section 10"], "relevance": "Policy-level oversight of statistical collection framework"},
+        {"act": "Right to Information Act, 2005", "sections": ["Section 4", "Section 19", "Section 20"], "relevance": "Policy decisions on data disclosure and proactive disclosure"},
+        {"act": "Fundamental Rules", "sections": ["Rule 56"], "relevance": "Administrative control and reporting duties"},
+        {"act": "Manual of Office Procedure", "sections": ["Chapter 10", "Chapter 12"], "relevance": "Office procedures for statistical record-keeping and filing"},
+        {"act": "Indian Evidence Act, 1872", "sections": ["Section 35", "Section 47A"], "relevance": "Admissibility of statistical evidence in administrative proceedings"},
+        {"act": "Official Secrets Act, 1923", "sections": ["Section 3", "Section 5"], "relevance": "Classification and protection of sensitive statistical data"}
+      ],
+      "statutory_rules": [
+        {"rule": "Transaction of Business Rules, 1961", "relevance": "Decision-making authority for statistical policy matters"},
+        {"rule": "Delegation of Financial Powers Rules, 1978", "relevance": "Budgetary control for statistical programs and surveys"},
+        {"rule": "Collection of Statistics (Central) Rules, 2011", "relevance": "Policy-level oversight of data collection procedures"}
+      ],
+      "competency_contexts": {
+        "FMT_001": "Statistical quality oversight must ensure compliance with NSC standards under the Collection of Statistics Act, 2008.",
+        "FMT_002": "Policy recommendations rely on macroeconomic statistics supporting Article 112 and Article 280 obligations.",
+        "NAS_001": "National Accounts quality directly impacts fiscal planning under Article 112 (Annual Financial Statement).",
+        "SRS_001": "Vital statistics policy must align with Census Act provisions and international statistical standards.",
+        "DDI_001": "Data dissemination policy must balance RTI Act obligations with Official Secrets Act protections.",
+        "IOT_001": "Digital transformation of statistical systems must comply with IT Act, 2000 and data governance frameworks."
+      }
+    },
+    "section_officer": {
+      "designation_title": "Section Officer",
+      "cadre_group": "Group B (Gazetted)",
+      "constitutional_articles": [
+        {"article": "Article 292", "title": "Borrowing by the Government of India", "relevance": "Ground-level data compilation for government accounts"},
+        {"article": "Article 112", "title": "Annual Financial Statement", "relevance": "Supporting data preparation for financial statements"},
+        {"article": "Article 320", "title": "Functions of Public Service Commissions", "relevance": "Statistical inputs for recruitment and service matters"}
+      ],
+      "acts_and_rules": [
+        {"act": "Collection of Statistics Act, 2008", "sections": ["Section 3", "Section 4", "Section 5"], "relevance": "Day-to-day statistical data collection operations"},
+        {"act": "Indian Census Act, 1948", "sections": ["Section 3", "Section 8"], "relevance": "Field-level census enumeration duties"},
+        {"act": "Right to Information Act, 2005", "sections": ["Section 5", "Section 7"], "relevance": "Processing RTI requests for statistical information"},
+        {"act": "Fundamental Rules", "sections": ["Rule 56", "Rule 82"], "relevance": "Office management and record-keeping requirements"},
+        {"act": "Manual of Office Procedure", "sections": ["Chapter 3", "Chapter 10"], "relevance": "Procedural compliance for statistical file management"}
+      ],
+      "statutory_rules": [
+        {"rule": "Collection of Statistics (Central) Rules, 2011", "relevance": "Operational procedures for field data collection"},
+        {"rule": "Fundamental Rules (FR 56)", "relevance": "Office procedures and record management"}
+      ],
+      "competency_contexts": {
+        "FMT_001": "Section-level statistical calculations must comply with Collection of Statistics Act accuracy mandates.",
+        "FMT_002": "Macroeconomic data compilation at section level feeds into higher-level Article 112 reporting.",
+        "NAS_001": "Sectoral data compilation follows the national accounts framework for state-level reporting.",
+        "SRS_001": "Section officers manage field-level SRS enumeration under Census Act, 1948 provisions.",
+        "DDI_001": "RTI compliance requires timely preparation of statistical data for public disclosure.",
+        "IOT_001": "IoT devices for field data must comply with data collection procedures under the 2008 Act."
+      }
+    },
+    "revenue_officer": {
+      "designation_title": "Revenue Officer",
+      "cadre_group": "Group A/B",
+      "constitutional_articles": [
+        {"article": "Article 265", "title": "Tax not to be levied except by authority of law", "relevance": "Statistical basis for tax revenue computation"},
+        {"article": "Article 268", "title": "Levy and collection of duties", "relevance": "Revenue data for fiscal statistics"},
+        {"article": "Article 269", "title": "Levy and collection of taxes for inter-governmental duties", "relevance": "Statistical analysis of tax devolution"},
+        {"article": "Article 270", "title": "Levy and collection of taxes for distribution", "relevance": "Revenue sharing statistics"},
+        {"article": "Article 275", "title": "Grants from the Union to the States", "relevance": "Revenue statistics for grant allocation"},
+        {"article": "Article 280", "title": "Finance Commission", "relevance": "Revenue data for fiscal devolution recommendations"}
+      ],
+      "acts_and_rules": [
+        {"act": "Collection of Statistics Act, 2008", "sections": ["Section 3", "Section 5"], "relevance": "Revenue statistics collection framework"},
+        {"act": "Income Tax Act, 1961", "sections": ["Section 139", "Section 234F"], "relevance": "Statistical data from income tax returns for economic analysis"},
+        {"act": "GST Act, 2017", "sections": ["Section 1", "Section 16", "Section 35"], "relevance": "Revenue statistics from GST data compilation"},
+        {"act": "Indian Stamp Act, 1899", "sections": ["Section 3", "Section 11"], "relevance": "Transaction value statistics for economic indicators"},
+        {"act": "Right to Information Act, 2005", "sections": ["Section 4"], "relevance": "Revenue data disclosure obligations"}
+      ],
+      "statutory_rules": [
+        {"rule": "Income Tax Rules, 1962", "relevance": "Procedural framework for revenue data collection"},
+        {"rule": "GST Rules, 2017", "relevance": "Revenue data compilation procedures under GST"}
+      ],
+      "competency_contexts": {
+        "FMT_001": "Revenue statistics require accurate statistical methods for tax base computation and analysis.",
+        "FMT_002": "Revenue data feeds directly into fiscal indicators under Article 270 (tax distribution).",
+        "NAS_001": "Revenue statistics are critical components of National Accounts and GDP computation.",
+        "SRS_001": "Revenue data supports demographic-economic cross-analysis for policy planning.",
+        "DDI_001": "Revenue statistics dissemination must comply with RTI Act and pre-budget embargo provisions.",
+        "IOT_001": "Digital revenue collection systems (GST Network) require IoT integration competency."
+      }
+    },
+    "ias": {
+      "designation_title": "Indian Administrative Service (IAS) / District Magistrate",
+      "cadre_group": "All India Services (AIS) - Group A Gazetted",
+      "constitutional_articles": [
+        {"article": "Article 311", "title": "Dismissal, removal or reduction in rank", "relevance": "Constitutional safeguards for civil servants and quasi-judicial disciplinary inquiry procedures"},
+        {"article": "Article 312", "title": "All-India Services", "relevance": "Cadre administration and inter-governmental coordination between Union and States"},
+        {"article": "Article 73 & Article 162", "title": "Executive powers of Union and State", "relevance": "Executive authority in implementing statutory schemes and policy mandates"},
+        {"article": "Article 243ZD", "title": "District Planning Committee", "relevance": "District-level planning, resource allocation, and decentralized socioeconomic development"},
+        {"article": "Article 112 & Article 202", "title": "Annual Financial Statement", "relevance": "District treasury oversight, scheme expenditure auditing, and statutory financial compliance"}
+      ],
+      "acts_and_rules": [
+        {"act": "Disaster Management Act, 2005", "sections": ["Section 30", "Section 34"], "relevance": "Chairperson of District Disaster Management Authority (DDMA) for emergency mitigation and relief"},
+        {"act": "Bharatiya Nagarik Suraksha Sanhita, 2023 / CrPC", "sections": ["Section 163 (Old Sec 144)", "Section 152"], "relevance": "Executive Magistrate powers for maintenance of public order and urgent preventive directions"},
+        {"act": "Collection of Statistics Act, 2008", "sections": ["Section 3", "Section 5", "Section 7"], "relevance": "District Nodal Officer mandate for socioeconomic surveys, agricultural census, and official statistical returns"},
+        {"act": "Right to Information Act, 2005", "sections": ["Section 4", "Section 19"], "relevance": "Appellate Authority oversight and mandatory proactive public disclosures"},
+        {"act": "Prevention of Corruption Act, 1988", "sections": ["Section 13", "Section 17A"], "relevance": "Statutory sanction procedures and administrative integrity in public procurement"}
+      ],
+      "statutory_rules": [
+        {"rule": "All India Services (Conduct) Rules, 1968", "relevance": "Ethical standards, official impartiality, asset declaration, and code of conduct"},
+        {"rule": "All India Services (Discipline and Appeal) Rules, 1969", "relevance": "Procedural compliance for administrative inquiries, penalties, and appeals"}
+      ],
+      "competency_contexts": {
+        "FMT_001": "District administrative decisions require rigorous statistical modeling to evaluate program delivery metrics and census surveys under statutory rules.",
+        "FMT_002": "Macroeconomic indicators guide district planning, centrally sponsored scheme fund allocations under Article 282, and capital expenditure tracking.",
+        "NAS_001": "District Domestic Product (DDP) compilation aggregates sector gross value added across rural and urban economies to feed State Accounts.",
+        "SRS_001": "Vital statistics oversight under the Registration of Births and Deaths Act, 1969 and Census Act, 1948 operates under district administrative supervision.",
+        "DDI_001": "Mandatory public disclosures under RTI Act Section 4 and District Gazette publications require transparent data dissemination pipelines.",
+        "IOT_001": "Smart city command centers, IoT telemetry in water/energy utilities, and automated weather stations require digital governance standards."
+      }
+    },
+    "ips": {
+      "designation_title": "Indian Police Service (IPS) / Superintendent of Police",
+      "cadre_group": "All India Services (AIS) - Group A Gazetted",
+      "constitutional_articles": [
+        {"article": "Article 21", "title": "Protection of life and personal liberty", "relevance": "Core constitutional benchmark governing police procedures, use of force, and custodial safeguards"},
+        {"article": "Article 22", "title": "Protection against arrest and detention", "relevance": "Mandatory communication of grounds of arrest, legal counsel access, and magistrate remand within 24 hours"},
+        {"article": "Article 311", "title": "Dismissal, removal or reduction in rank", "relevance": "Constitutional safeguards for police service officers during departmental inquiries"},
+        {"article": "Article 312", "title": "All-India Services", "relevance": "Central-State police cadre coordination and All-India police service administration"}
+      ],
+      "acts_and_rules": [
+        {"act": "Police Act, 1861 & State Police Acts", "sections": ["Section 23", "Section 29"], "relevance": "Statutory duties of police officers, prevention of offenses, and accountability mechanisms"},
+        {"act": "Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS)", "sections": ["Section 35", "Section 173", "Section 176", "Section 187"], "relevance": "Investigation procedures, FIR registration, forensic crime scene documentation, and arrest guidelines"},
+        {"act": "Bharatiya Sakshya Adhiniyam, 2023 (BSA)", "sections": ["Section 22", "Section 63"], "relevance": "Electronic evidence admissibility, forensic hash validation, and digital chain of custody"},
+        {"act": "Information Technology Act, 2000", "sections": ["Section 43", "Section 66", "Section 69"], "relevance": "Cybercrime investigation, digital data seizure protocols, and lawful interception frameworks"},
+        {"act": "Right to Information Act, 2005", "sections": ["Section 8(1)(h)"], "relevance": "Balancing public transparency with statutory exemptions for ongoing investigations and intelligence"}
+      ],
+      "statutory_rules": [
+        {"rule": "All India Services (Conduct) Rules, 1968", "relevance": "Standards of conduct, human rights adherence, and operational integrity"},
+        {"rule": "Criminal Procedure (Identification) Rules, 2022", "relevance": "Standard operating procedures for biometric data collection, storage, and forensic analysis"}
+      ],
+      "competency_contexts": {
+        "FMT_001": "Crime statistics compilation under NCRB protocols requires rigorous multivariate time-series analysis and geospatial crime hotspot mapping.",
+        "FMT_002": "Police modernization budgeting and resource deployment depend on fiscal forecasting under State Police financial rules.",
+        "NAS_001": "Economic offense investigations protect national accounts and fiscal revenue from money laundering and systemic fraud.",
+        "SRS_001": "Accidental deaths and suicide statistics (ADSI) and vital registration cross-checks support law enforcement strategic planning.",
+        "DDI_001": "Crime data dissemination must balance RTI transparency with statutory exemptions under Section 8(1)(h) to protect active investigations.",
+        "IOT_001": "Deployment of Automated Number Plate Recognition (ANPR), body-worn camera feeds, and CCTV telemetry requires secure IoT protocols."
+      }
+    }
+  },
+  "fallback_designation": "statistical_officer"
+}

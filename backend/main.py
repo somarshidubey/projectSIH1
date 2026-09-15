@@ -70,6 +70,7 @@ _rec_engine = None
 _quiz_gen = None
 _ingestor = None
 _chatbot = None
+_agent = None
 
 
 def get_analyzer() -> GapAnalyzer:
@@ -110,6 +111,14 @@ def get_chatbot() -> "ChatbotService":
     return _chatbot
 
 
+def get_agent() -> "LearningAgentService":
+    global _agent
+    if _agent is None:
+        services = importlib.import_module("services.learning_agent")
+        _agent = services.LearningAgentService()
+    return _agent
+
+
 class OfficerProfile(BaseModel):
     officer_id: str
     name: str
@@ -131,6 +140,30 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
+
+
+class AgentSessionCreate(BaseModel):
+    officer_id: str
+    role: str | None = None
+    department: str | None = None
+    name: str | None = None
+
+
+class AgentRespond(BaseModel):
+    answer: str = ""
+    suggestion: str | None = None
+
+
+class AgentRestart(BaseModel):
+    role: str | None = None
+    department: str | None = None
+    name: str | None = None
+
+
+class IGOTLoginRequest(BaseModel):
+    email: str | None = None
+    officer_id: str | None = None
+    password: str | None = None
 
 
 @app.get("/")
@@ -267,6 +300,82 @@ def get_courses_for_competency(request: Request, competency_id: str):
     return {"competency_id": competency_id, "courses": courses}
 
 
+# ============================================
+# iGOT Karmayogi Server-to-Server Integration
+# ============================================
+
+@app.get("/api/v1/igot/officer/{officer_id}")
+@limiter.limit("30/minute")
+def get_igot_officer_profile(request: Request, officer_id: str):
+    """Fetch an officer's iGOT Karmayogi profile (live when configured, mock fallback)."""
+    agent = get_agent()
+    profile = agent.igot.get_officer_profile(officer_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Officer profile not found")
+    return profile
+
+
+@app.get("/api/v1/igot/officer/{officer_id}/courses")
+@limiter.limit("30/minute")
+def get_igot_officer_courses(request: Request, officer_id: str):
+    """Fetch courses recommended for an officer from the iGOT catalog with resolved hyperlinks."""
+    agent = get_agent()
+    courses = agent.igot.get_officer_courses(officer_id)
+    return {"officer_id": officer_id, "courses": courses}
+
+
+@app.get("/api/v1/igot/courses/all")
+@limiter.limit("30/minute")
+def get_all_igot_courses_with_links(request: Request):
+    """Fetch all courses from the iGOT catalog with resolved live hyperlinks."""
+    agent = get_agent()
+    courses = agent.igot.get_courses()
+    return {"platform": "iGOT Karmayogi", "total": len(courses), "courses": courses}
+
+
+@app.post("/api/v1/igot/auth/login")
+@limiter.limit("10/minute")
+def igot_auth_login(request: Request, body: IGOTLoginRequest = None):
+    """Server-to-server authentication proxy for iGOT Karmayogi.
+
+    When IGOT_CLIENT_ID is configured, performs OAuth2 client-credentials
+    exchange against the iGOT auth endpoint and returns a session token.
+    When not configured, returns a demo token for local testing.
+    Also hydrates and returns the authenticated officer profile.
+    """
+    from services.igot_client import IGOTClient
+    client = IGOTClient()
+    token = client.token_manager.get_access_token() if client.token_manager else None
+
+    officer_id = None
+    if body:
+        if body.officer_id:
+            officer_id = body.officer_id.strip()
+        elif body.email:
+            email_clean = body.email.strip().lower()
+            for oid, prof in client.profiles.items():
+                if prof.get("email", "").lower() == email_clean or prof.get("username", "").lower() == email_clean:
+                    officer_id = oid
+                    break
+
+    if not officer_id:
+        officer_id = "MOFSI-001"
+
+    profile = dict(client.get_officer_profile(officer_id))
+    # Preserve the lookup identifier alongside the iGOT profile payload so
+    # the web client can start subsequent officer-specific API requests.
+    profile["officer_id"] = officer_id
+
+    return {
+        "authenticated": True,
+        "token_type": "Bearer" if token else "demo",
+        "access_token": token if token else "demo-token-local-testing",
+        "source": "iGOT Karmayogi (live)" if token else "Saksham (mock mode)",
+        "message": "Authenticated via iGOT Karmayogi OAuth2" if token else "Running in demo mode — configure IGOT_CLIENT_ID for live iGOT authentication",
+        "officer": profile,
+    }
+
+
 @app.get("/api/v1/recommendations")
 @limiter.limit("20/minute")
 def get_recommendations_demo(request: Request):
@@ -306,6 +415,87 @@ def get_personalized_recommendations(request: Request, profile: OfficerProfile):
         "gaps": gap_result["gaps"],
         "recommendations": recs,
     }
+
+
+# ============================================
+# LIVE AI LEARNING AGENT (Karmayogi AI Mentor)
+# ============================================
+
+@app.post("/api/v1/agent/session")
+@limiter.limit("10/minute")
+def create_agent_session(request: Request, body: AgentSessionCreate):
+    """Start a live AI learning session for an officer.
+
+    The officer profile (department, role, sub-department) is pulled from the
+    iGOT Karmayogi ecosystem via the IGOTClient adapter, then the Karmayogi AI
+    Mentor begins an adaptive competency interview.
+    """
+    officer_id = body.officer_id.strip()
+    if not officer_id:
+        raise HTTPException(status_code=400, detail="officer_id must not be empty")
+    try:
+        return get_agent().create_session(
+            officer_id,
+            role=body.role,
+            department=body.department,
+            name=body.name,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Agent session failed: {exc}")
+
+
+@app.get("/api/v1/agent/session")
+@limiter.limit("60/minute")
+def get_agent_session_by_officer(request: Request, officer_id: str):
+    """Return the current agent session for an officer, if one exists."""
+    session = get_agent().get_session_by_officer(officer_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="No active session for this officer")
+    return get_agent().public_state(session["session_id"])
+
+
+@app.get("/api/v1/agent/session/{session_id}")
+@limiter.limit("60/minute")
+def get_agent_session(request: Request, session_id: str):
+    """Fetch the full live state of an agent session."""
+    state = get_agent().public_state(session_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Agent session not found")
+    return state
+
+
+@app.post("/api/v1/agent/session/{session_id}/respond")
+@limiter.limit("20/minute")
+def respond_agent_session(request: Request, session_id: str, body: AgentRespond):
+    """Submit the officer's answer to the current AI question.
+
+    Evaluates the answer, updates live gap analysis, refreshes iGOT course
+    recommendations, and returns the next interview step.
+    """
+    try:
+        state = get_agent().respond(session_id, body.answer, suggestion=body.suggestion)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Agent session not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Agent respond failed: {exc}")
+    return state
+
+
+@app.post("/api/v1/agent/session/{officer_id}/restart")
+@limiter.limit("10/minute")
+def restart_agent_session(request: Request, officer_id: str, body: AgentRestart):
+    """Start a fresh interview for the same officer, discarding the old one."""
+    try:
+        return get_agent().restart_session(
+            officer_id,
+            role=body.role,
+            department=body.department,
+            name=body.name,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Agent restart failed: {exc}")
 
 
 # ============================================

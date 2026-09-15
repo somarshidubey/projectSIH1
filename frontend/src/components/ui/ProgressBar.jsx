@@ -9,6 +9,7 @@ export default function ProgressBar({ value = 0, max = 100, color = 'indigo', la
     rose: 'bg-rose-500',
     amber: 'bg-amber-500',
     blue: 'bg-blue-500',
+    orange: 'bg-[#cf492c]',
   }
 
   const heights = {

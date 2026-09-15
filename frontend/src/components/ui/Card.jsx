@@ -5,13 +5,13 @@ export default function Card({ children, className = '', hover = false, ...props
   const motionProps = hover
     ? {
         whileHover: { y: -2 },
-        transition: { duration: 0.2 },
+        transition: { duration: 0.15 },
       }
     : {}
 
   return (
     <Comp
-      className={`rounded-xl border border-slate-100 bg-white p-6 shadow-md transition-colors duration-200 dark:border-slate-800 dark:bg-slate-900 ${className}`}
+      className={`rounded-none border border-[#2b211c] bg-[#141210] p-6 shadow-[4px_4px_0_#000] transition-colors duration-200 ${className}`}
       {...motionProps}
       {...props}
     >

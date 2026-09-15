@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useOutlet } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Toaster } from 'react-hot-toast'
-import { ThemeProvider } from './context/ThemeContext'
+import { LogOut, ChevronDown } from 'lucide-react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CourseProvider } from './context/CourseContext'
-import Sidebar from './components/layout/Sidebar'
+import { AgentProvider } from './context/AgentContext'
 import ChatWidget from './components/features/ChatWidget'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -20,23 +21,64 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function CompactUserMenu() {
+  const { user, logout } = useAuth()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="fixed right-4 top-4 z-40">
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="flex items-center gap-2 rounded-sm border border-[#2b211c] bg-[#141210]/95 px-3 py-2 font-mono text-xs text-[#e5e5e5] shadow-[3px_3px_0_#000] backdrop-blur transition-colors hover:border-[#3a2a22] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cf492c]"
+      >
+        <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-[#cf492c] text-[10px] font-bold text-white">
+          {user?.avatar || 'U'}
+        </span>
+        <span className="hidden sm:inline">{user?.name || 'User'}</span>
+        <ChevronDown className="h-3.5 w-3.5 text-[#cf492c]" aria-hidden="true" />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-sm border border-[#3a2a22] bg-[#141210] shadow-[4px_4px_0_#000]">
+          <div className="border-b border-[#2b211c] p-3 font-mono">
+            <p className="text-xs text-[#e5e5e5]">{user?.name}</p>
+            <p className="mt-0.5 text-[11px] text-[#a3a3a3]">{user?.id} · {user?.department || 'MoSPI'}</p>
+          </div>
+          <button
+            role="menuitem"
+            onClick={() => {
+              logout()
+              setOpen(false)
+            }}
+            className="flex w-full items-center gap-2 px-3 py-2.5 font-mono text-xs text-[#cf492c] transition-colors hover:bg-[#1a1412] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#cf492c]"
+          >
+            <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+            Sign Out
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ProtectedLayout() {
   const location = useLocation()
   const outlet = useOutlet()
 
   return (
-    <div className="min-h-screen bg-slate-50 transition-colors duration-300 dark:bg-slate-950">
+    <div className="min-h-screen transition-colors duration-300">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-white"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-sm focus:bg-[#cf492c] focus:px-4 focus:py-2 focus:text-white"
       >
         Skip to main content
       </a>
-      <Sidebar />
-      <ChatWidget />
+      <CompactUserMenu />
+      {location.pathname !== '/' && <ChatWidget />}
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-      <main id="main-content" role="main" className="min-h-screen pt-16 lg:ml-64 lg:pt-0">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main id="main-content" role="main" className="min-h-screen">
+        <div className="mx-auto w-full max-w-[120rem] px-3 py-4 sm:px-5 sm:py-5 lg:px-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -80,15 +122,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <CourseProvider>
+    <AuthProvider>
+      <CourseProvider>
+        <AgentProvider>
           <Router>
             <AppRoutes />
           </Router>
-        </CourseProvider>
-      </AuthProvider>
-    </ThemeProvider>
+        </AgentProvider>
+      </CourseProvider>
+    </AuthProvider>
   )
 }
 

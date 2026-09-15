@@ -9,7 +9,6 @@ import Select from '../components/ui/Select'
 import ProgressBar from '../components/ui/ProgressBar'
 import GapCard from '../components/features/GapCard'
 import PageWrapper from '../components/layout/PageWrapper'
-import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { sampleHistory, roleOptions } from '../data/sampleData'
 import { apiPost } from '../lib/api'
@@ -65,7 +64,6 @@ const CustomRadarTooltip = ({ active, payload }) => {
 }
 
 export default function GapAnalysis() {
-  const { dark } = useTheme()
   const { user } = useAuth()
   const [form, setForm] = useState(() => ({
     officer_id: user?.id || 'MOFSI-001',
@@ -89,7 +87,7 @@ export default function GapAnalysis() {
 
   const roleLabel = roleOptions.find((r) => r.value === form.role)?.label || form.role
 
-  const tickFill = dark ? '#94a3b8' : '#475569'
+  const tickFill = '#94a3b8'
   const gridStroke = dark ? '#334155' : '#e2e8f0'
   const referenceStroke = dark ? '#475569' : '#cbd5e1'
 
